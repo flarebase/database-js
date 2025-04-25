@@ -1,0 +1,22 @@
+package-lock.json
+yarn.lock
+bun.lock
+pnpm-lock.yaml
+
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+**/.DS_Store
