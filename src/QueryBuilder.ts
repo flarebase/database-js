@@ -1,49 +1,72 @@
-import { Builder, FilterBuilder } from "."
-import type { Fetch, GenericDatabase, GenericTable, GetResult } from "./types"
+import { Builder, FilterBuilder } from ".";
+import type { Fetch, GenericDatabase, GenericTable, GetResult } from "./types";
 
+/**
+ * Provides query-building methods for a specific table in a typed database schema.
+ *
+ * @template Database - The database schema.
+ * @template Table - The table being queried, including its Row, Insert, and Update types. 
+ */
 export default class QueryBuilder<
     Database extends GenericDatabase,
-    TableName extends keyof Database["Tables"],
     Table extends GenericTable,
 > {
-    url: URL
-    headers: Record<string, string>
-    fetch?: Fetch
+    url: URL;
+    headers: Record<string, string>;
+    fetch?: Fetch;
 
+    /**
+     * Creates a new `QueryBuilder` instance.
+     *
+     * @param url - The base URL to use for the query.
+     * @param options - Optional headers and fetch implementation.
+     */
     constructor(
         url: URL,
         {
             headers = {},
             fetch,
         }: {
-            headers?: Record<string, string>
-            fetch?: Fetch
-        } = {}
+            headers?: Record<string, string>;
+            fetch?: Fetch;
+        } = {},
     ) {
-        this.url = new URL(url)
-        this.headers = headers
-        this.fetch = fetch
-    }
+        this.url = new URL(url);
+        this.headers = headers;
+        this.fetch = fetch;
+    };
 
+    /**
+     * Performs a `SELECT` query on the table.
+     *
+     * @param columns - A comma-separated list of columns to return, or `*` for all columns.
+     * @returns A `FilterBuilder` to continue building the query.
+     *
+     * @example
+     * ```ts
+     * db.from('users').select('id,name')
+     * db.from('posts').select('*')
+     * ```
+     */
     select<
         Columns extends string = '*',
-        ResultOne = GetResult<Table['Row'], Columns>
+        ResultOne = GetResult<Table['Row'], Columns>,
     >(
         columns?: Columns,
-    ): FilterBuilder<Database, Table["Row"], ResultOne[], TableName, Table["Relationships"]> {
-        const method = 'GET'
-        this.url = new URL(`${this.url}/query`)
-        let quoted = false
+    ): FilterBuilder<Database, Table["Row"], ResultOne[]> {
+        const method = 'GET';
+        this.url = new URL(`${this.url}/query`);
+        let quoted = false;
         const cleanedColumns = (columns ?? '*')
             .split('')
             .map((c) => {
                 if (/\s/.test(c) && !quoted) {
-                    return ''
+                    return '';
                 }
                 if (c === '"') {
-                    quoted = !quoted
+                    quoted = !quoted;
                 }
-                return c
+                return c;
             })
             .join('');
 
@@ -54,22 +77,104 @@ export default class QueryBuilder<
             url: this.url,
             headers: this.headers,
             fetch: this.fetch,
-        } as unknown as Builder<ResultOne[]>)
+        } as unknown as Builder<ResultOne[]>);
     }
 
-    // TODO: Bulk insert 
+    /**
+     * Inserts one or more rows into the table.
+     *
+     * @param rows - A single row or an array of rows to insert.
+     */
     insert<Row extends Table extends { Insert: unknown } ? Table["Insert"] : never>(
-        row: Row,
-    ): FilterBuilder<Database, Table["Row"], Row[], TableName, Table["Relationships"]> {
-        const method = 'POST'
-        this.url = new URL(`${this.url}/insert`)
+        rows: Row | Row[],
+    ): FilterBuilder<Database, Table["Row"], Row[]> {
+        const method = 'POST';
+        this.url = new URL(`${this.url}/insert`);
+
+        if (!Array.isArray(rows)) {
+            rows = [rows];
+        }
 
         return new FilterBuilder({
             method: method,
             url: this.url,
             headers: this.headers,
-            body: row,
+            body: { rows: rows },
             fetch: this.fetch,
-        } as unknown as Builder<Row[]>)
+        } as unknown as Builder<Row[]>);
+    }
+
+    /**
+     * Performs an upsert (insert or update on conflict) operation on the table.
+     *
+     * @param values - The rows to upsert.
+     * @param options - Conflict resolution options.
+     * @param options.onConflict - An array of column names to use for conflict detection.
+     * @param options.ignoreDuplicates - If `true`, conflicting rows are ignored (`DO NOTHING`).
+     */
+    upsert<Row extends Table extends { Insert: unknown } ? Table["Insert"] : never>(
+        values: Row | Row[],
+        {
+            onConflict,
+            ignoreDuplicates,
+        }: {
+            onConflict?: (keyof Row)[];
+            ignoreDuplicates?: boolean;
+        } = {},
+    ): FilterBuilder<Database, Table["Row"], Row[]> {
+        const method = 'POST';
+        this.url = new URL(`${this.url}/upsert`);
+
+        const body = {
+            rows: values,
+            onConflict: onConflict ?? undefined,
+            ignoreDuplicates: ignoreDuplicates ?? false,
+        };
+
+        return new FilterBuilder({
+            method: method,
+            url: this.url,
+            headers: this.headers,
+            body: { body: body },
+            fetch: this.fetch,
+        } as unknown as Builder<Row[]>);
+    }
+
+    /**
+     * Updates one or more rows in the table.
+     *
+     * @param values - The partial row object with fields to update.
+     * @returns A `FilterBuilder` to filter which rows are affected.
+     */
+    update<Row extends Table extends { Update: unknown } ? Table["Update"] : never>(
+        values: Row,
+    ): FilterBuilder<Database, Table["Row"], Row[]> {
+        const method = 'PATCH';
+        this.url = new URL(`${this.url}/update`);
+
+        return new FilterBuilder({
+            method: method,
+            url: this.url,
+            headers: this.headers,
+            body: { row: values },
+            fetch: this.fetch,
+        } as unknown as Builder<Row[]>);
+    }
+
+    /**
+     * Deletes rows from the table.
+     *
+     * @returns A `FilterBuilder` to filter which rows should be deleted.
+     */
+    delete(): FilterBuilder<Database, Table["Row"], Table["Row"]> {
+        const method = 'DELETE';
+        this.url = new URL(`${this.url}/delete`);
+
+        return new FilterBuilder({
+            method: method,
+            url: this.url,
+            headers: this.headers,
+            fetch: this.fetch,
+        } as unknown as Builder<Table["Row"]>);
     }
 }

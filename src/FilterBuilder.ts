@@ -1,74 +1,94 @@
 import TransformBuilder from "./TransformBuilder";
 import type { GenericDatabase, XOR } from "./types";
 
-type ResolveFilterValue<
-    Database extends GenericDatabase,
-    Row extends Record<string, unknown>,
-    ColumnName extends string,
-> =
-    ColumnName extends `${infer RelationshipTable}.${infer Remainder}`
-    ? Remainder extends `${infer _}.${infer _}`
-    ? ResolveFilterValue<Database, Row, Remainder>
-    : ResolveFilterRelationshipValue<Database, RelationshipTable, Remainder>
-    : ColumnName extends keyof Row
-    ? Row[ColumnName]
-    : unknown;
-
-type ResolveFilterRelationshipValue<
-    Database extends GenericDatabase,
-    RelationshipTable extends string,
-    RelationshipColumn extends string,
-> =
-    Database["Tables"] extends infer Tables
-    ? RelationshipTable extends keyof Tables
-    ? "Row" extends keyof Tables[RelationshipTable]
-    ? RelationshipColumn extends keyof Tables[RelationshipTable]["Row"]
-    ? Tables[RelationshipTable]["Row"][RelationshipColumn]
-    : unknown
-    : unknown
-    : unknown
-    : never;
-
-// Supported operators
+/**
+ * Supported SQL comparison operators.
+ */
 type ComparisonOperator =
-    | 'eq'
-    | 'neq'
-    | 'gt'
-    | 'gte'
-    | 'lt'
-    | 'lte'
-    | 'like'
-    | 'in'
-    | 'is'
-    | 'not';
+    | 'eq'   // Equal (=)
+    | 'neq'  // Not equal (!=)
+    | 'gt'   // Greater than (>)
+    | 'gte'  // Greater than or equal (>=)
+    | 'lt'   // Less than (<)
+    | 'lte'  // Less than or equal (<=)
+    | 'like' // SQL LIKE pattern
+    | 'in'   // SQL IN clause
+    | 'is'   // IS (e.g., IS NULL)
+    | 'not'; // NOT (e.g., NOT TRUE)
 
-// A single condition like { age: { gte: 20 } }
+/**
+ * A single condition applied to a column, e.g. `{ age: { gte: 20 } }`.
+ */
 type SingleCondition = {
     [column: string]: {
         [operator in ComparisonOperator]?: unknown;
     };
 };
 
+/**
+ * Represents a logical AND group of filter trees.
+ */
 type AndNode = { and: FilterTree[] };
+
+/**
+ * Represents a logical OR group of filter trees.
+ */
 type OrNode = { or: FilterTree[] };
 
-// Filter tree can be a combination of AND, OR, and single conditions but only one of them can be present at a time
+/**
+ * A filter tree can either be:
+ * - A single condition (column operator comparison)
+ * - A group of AND conditions
+ * - A group of OR conditions
+ * 
+ * Only one of these can exist at the top level of any tree node.
+ */
 type FilterTree = XOR<XOR<AndNode, OrNode>, SingleCondition>;
 
+/**
+ * FilterBuilder enables constructing SQL-style `WHERE` clauses from nested condition trees.
+ * 
+ * @template Database - The generic database schema type.
+ * @template Row - The shape of a row for the selected table.
+ * @template Result - The final result type returned from the query.
+ */
 export default class FilterBuilder<
     Database extends GenericDatabase,
     Row extends Record<string, unknown>,
     Result,
-    TableName = unknown,
-    Relationships = unknown,
-> extends TransformBuilder<Database, Row, Result, TableName, Relationships> {
+> extends TransformBuilder<Database, Row, Result> {
+    /**
+     * Applies a filter condition tree to the query.
+     * 
+     * @param tree - The structured filter conditions using logical `and`, `or`, or field comparisons.
+     * @returns The current builder instance for chaining.
+     * 
+     * @example
+     * ```ts
+     * // Expected WHERE Clause: age >= 65 OR (age >= 18 AND gender = 'M')
+     * query.filter({
+     *   or: [
+     *     { age: { gte: 65 } },
+     *     { and: [ 
+     *       { age: { gte: 18 } }, 
+     *       { gender: { eq: 'M' } } 
+     *     ]}
+     *   ]
+     * })
+     * ```
+     */
     filter(tree: FilterTree): this {
         const where = this.buildFilter(tree);
-        console.log("where", where);
         this.url.searchParams.append('where', where);
         return this;
     }
 
+    /**
+     * Converts the filter tree into a SQL-compatible `WHERE` string.
+     *
+     * @param tree - A structured representation of filter conditions.
+     * @returns SQL expression string for the `WHERE` clause.
+     */
     private buildFilter(tree: FilterTree): string {
         if (this.isAndNode(tree)) {
             return '(' + tree.and.map(sub => this.buildFilter(sub)).join(' AND ') + ')';
@@ -77,7 +97,7 @@ export default class FilterBuilder<
             return '(' + tree.or.map(sub => this.buildFilter(sub)).join(' OR ') + ')';
         }
 
-        // Handle simple comparison
+        // Handle simple key-operator-value comparison
         return Object.entries(tree)
             .map(([column, ops]) =>
                 Object.entries(ops)
@@ -87,6 +107,13 @@ export default class FilterBuilder<
             .join(' AND ');
     }
 
+    /**
+     * Builds an individual SQL comparison expression (e.g., `age >= 30`).
+     *
+     * @param column - The column name.
+     * @param op - The comparison operator.
+     * @param val - The value to compare against.
+     */
     private buildExpression(column: string, op: ComparisonOperator, val: unknown): string {
         const operatorMap: Record<ComparisonOperator, string> = {
             eq: '=',
@@ -106,6 +133,13 @@ export default class FilterBuilder<
         return `${column} ${sqlOp} ${value}`;
     }
 
+    /**
+     * Formats a value for safe inclusion in a SQL clause.
+     *
+     * @param op - The comparison operator.
+     * @param val - The value to format.
+     * @returns The SQL-encoded value.
+     */
     private formatValue(op: ComparisonOperator, val: unknown): string {
         if (op === 'in' && Array.isArray(val)) {
             return `(${val.map(v => this.quote(v)).join(', ')})`;
@@ -113,16 +147,28 @@ export default class FilterBuilder<
         return this.quote(val);
     }
 
+    /**
+     * Safely quotes and escapes a value for SQL.
+     *
+     * @param val - The raw value.
+     * @returns A SQL-safe string.
+     */
     private quote(val: unknown): string {
         if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
         if (val === null) return 'NULL';
         return String(val);
     }
 
+    /**
+     * Type guard: checks if a filter tree node is an `and` group.
+     */
     private isAndNode(tree: FilterTree): tree is { and: FilterTree[] } {
         return typeof tree === 'object' && tree !== null && 'and' in tree;
     }
 
+    /**
+     * Type guard: checks if a filter tree node is an `or` group.
+     */
     private isOrNode(tree: FilterTree): tree is { or: FilterTree[] } {
         return typeof tree === 'object' && tree !== null && 'or' in tree;
     }
