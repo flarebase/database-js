@@ -71,10 +71,10 @@ export default class TransformBuilder<
             nullsFirst?: boolean;
         } = {},
     ): this {
-        const existingOrder = this.url.searchParams.get("orderBy");
+        const existingOrder = this.url.searchParams.get("sort");
 
         this.url.searchParams.set(
-            "orderBy",
+            "sort",
             `${existingOrder ? `${existingOrder},` : ''}${column}.${ascending ? 'asc' : 'desc'}${nullsFirst === undefined ? '' : nullsFirst ? '.nullsfirst' : '.nullslast'}`,
         );
         return this;
