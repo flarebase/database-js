@@ -49,14 +49,18 @@ type FilterTree = XOR<XOR<AndNode, OrNode>, SingleCondition>;
  * FilterBuilder enables constructing SQL-style `WHERE` clauses from nested condition trees.
  * 
  * @template Database - The generic database schema type.
+ * @template TableName - The name of the table being queried.
  * @template Row - The shape of a row for the selected table.
  * @template Result - The final result type returned from the query.
+ * @template Relationships - The relationships defined in the database schema.
  */
 export default class FilterBuilder<
     Database extends GenericDatabase,
-    Row extends Record<string, unknown>,
-    Result,
-> extends TransformBuilder<Database, Row, Result> {
+    TableName extends keyof Database["Tables"] & string,
+    Row extends Record<string, unknown> = Database["Tables"][TableName]["Row"],
+    Result = unknown,
+    Relationships extends Database["Tables"][TableName]["Relationships"] = Database["Tables"][TableName]["Relationships"],
+> extends TransformBuilder<Database, TableName, Row, Result, Relationships> {
     /**
      * Applies a filter condition tree to the query.
      * 
@@ -128,9 +132,25 @@ export default class FilterBuilder<
             not: 'NOT'
         };
 
+        if (op === 'is') {
+            return `${column} IS ${String(val).toUpperCase()}`;
+        }
+
+        if (op === 'not') {
+            return `NOT ${column}`;
+        }
+
         const sqlOp = operatorMap[op];
         const value = this.formatValue(op, val);
-        return `${column} ${sqlOp} ${value}`;
+        return `${this.quoteIdentifier(column)} ${sqlOp} ${value}`;
+    }
+
+    private quoteIdentifier(identifier: string): string {
+        // Handles dot notation like profiles.bio → "profiles"."bio"
+        return identifier
+            .split('.')
+            .map(part => `"${part}"`)
+            .join('.');
     }
 
     /**
@@ -142,8 +162,11 @@ export default class FilterBuilder<
      */
     private formatValue(op: ComparisonOperator, val: unknown): string {
         if (op === 'in' && Array.isArray(val)) {
-            return `(${val.map(v => this.quote(v)).join(', ')})`;
+            return `(${val.map(v => this.quote(v)).join(',')})`;
         }
+
+        if (op === 'is') return String(val).toUpperCase();
+
         return this.quote(val);
     }
 

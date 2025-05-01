@@ -5,11 +5,15 @@ import type { Fetch, GenericDatabase, GenericTable, GetResult } from "./types";
  * Provides query-building methods for a specific table in a typed database schema.
  *
  * @template Database - The database schema.
+ * @template TableName - The name of the table being queried. 
  * @template Table - The table being queried, including its Row, Insert, and Update types. 
+ * @template Relationships - The relationships defined in the database schema
  */
 export default class QueryBuilder<
     Database extends GenericDatabase,
-    Table extends GenericTable,
+    TableName extends keyof Database["Tables"] & string,
+    Table extends GenericTable = Database["Tables"][TableName],
+    Relationships extends Table["Relationships"] = Table["Relationships"],
 > {
     url: URL;
     headers: Record<string, string>;
@@ -53,7 +57,7 @@ export default class QueryBuilder<
         ResultOne = GetResult<Table['Row'], Columns>,
     >(
         columns?: Columns,
-    ): FilterBuilder<Database, Table["Row"], ResultOne[]> {
+    ): FilterBuilder<Database, TableName, Table["Row"], ResultOne[], Relationships> {
         const method = 'GET';
         this.url = new URL(`${this.url}/query`);
         let quoted = false;
@@ -87,7 +91,7 @@ export default class QueryBuilder<
      */
     insert<Row extends Table extends { Insert: unknown } ? Table["Insert"] : never>(
         rows: Row | Row[],
-    ): FilterBuilder<Database, Table["Row"], Row[]> {
+    ): FilterBuilder<Database, TableName, Table["Row"], Row[], Relationships> {
         const method = 'POST';
         this.url = new URL(`${this.url}/insert`);
 
@@ -121,7 +125,7 @@ export default class QueryBuilder<
             onConflict?: (keyof Row)[];
             ignoreDuplicates?: boolean;
         } = {},
-    ): FilterBuilder<Database, Table["Row"], Row[]> {
+    ): FilterBuilder<Database, TableName, Table["Row"], Row[], Relationships> {
         const method = 'POST';
         this.url = new URL(`${this.url}/upsert`);
 
@@ -148,7 +152,7 @@ export default class QueryBuilder<
      */
     update<Row extends Table extends { Update: unknown } ? Table["Update"] : never>(
         values: Row,
-    ): FilterBuilder<Database, Table["Row"], Row[]> {
+    ): FilterBuilder<Database, TableName, Table["Row"], Row[], Relationships> {
         const method = 'PATCH';
         this.url = new URL(`${this.url}/update`);
 
@@ -166,7 +170,7 @@ export default class QueryBuilder<
      *
      * @returns A `FilterBuilder` to filter which rows should be deleted.
      */
-    delete(): FilterBuilder<Database, Table["Row"], Table["Row"]> {
+    delete(): FilterBuilder<Database, TableName, Table["Row"], Table["Row"], Relationships> {
         const method = 'DELETE';
         this.url = new URL(`${this.url}/delete`);
 

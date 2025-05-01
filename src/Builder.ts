@@ -154,9 +154,6 @@ export default abstract class Builder<
             }))
         }
 
-        console.log('this.url', this.url.toString())
-        console.log('this.body', this.body)
-
         return res.then(onfulfilled, onrejected)
     }
 }

@@ -6,20 +6,24 @@ import type { GenericDatabase, GetResult } from "./types";
  * ordering, and pagination. It extends `Builder` to inherit request construction and execution logic.
  *
  * @template Database - The database schema.
+ * @template TableName - The name of the table being queried.
  * @template Row - The shape of each row in the selected table.
  * @template Result - The shape of the final query result.
+ * @template Relationships - The relationships defined in the database schema.
  */
 export default class TransformBuilder<
     Database extends GenericDatabase,
-    Row extends Record<string, unknown>,
-    Result,
+    TableName extends keyof Database["Tables"] & string,
+    Row extends Database["Tables"][TableName]["Row"] = Database["Tables"][TableName]["Row"],
+    Result = unknown,
+    Relationships extends Database["Tables"][TableName]["Relationships"] = Database["Tables"][TableName]["Relationships"],
 > extends Builder<Result> {
     select<
         Columns extends string = "*",
         NewResultOne = GetResult<Row, Columns>,
     >(
         columns?: Columns,
-    ): TransformBuilder<Database, Row, NewResultOne> {
+    ): TransformBuilder<Database, TableName, Row, NewResultOne, Relationships> {
         this.url = new URL(`${this.url}/query`);
 
         // Remove whitespace outside quoted identifiers
@@ -39,7 +43,7 @@ export default class TransformBuilder<
 
         this.url.searchParams.set("columns", cleanedColumns);
 
-        return this as unknown as TransformBuilder<Database, Row, NewResultOne>;
+        return this as unknown as TransformBuilder<Database, TableName, Row, NewResultOne, Relationships>;
     }
 
     /**

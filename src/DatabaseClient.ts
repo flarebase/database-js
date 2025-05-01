@@ -56,13 +56,23 @@ export default class DatabaseClient<
      * ```
      */
     from<
-        TableName extends keyof Database["Tables"],
-        Table extends Database["Tables"][TableName],
-    >(tableName: TableName): QueryBuilder<Database, Table> {
+        TableName extends keyof Database["Tables"] & string
+    >(
+        tableName: TableName,
+    ): QueryBuilder<Database, TableName, Database["Tables"][TableName], Database["Tables"][TableName]["Relationships"]> {
         const url = new URL(`${this.url}/tables/${String(tableName)}`);
-        return new QueryBuilder<Database, Table>(url, {
-            headers: this.headers,
-            fetch: this.fetch,
-        })
+
+        return new QueryBuilder<
+            Database,
+            TableName,
+            Database["Tables"][TableName],
+            Database["Tables"][TableName]["Relationships"]
+        >(
+            url,
+            {
+                headers: this.headers,
+                fetch: this.fetch,
+            },
+        );
     }
 }
