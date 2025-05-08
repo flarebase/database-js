@@ -1,0 +1,22 @@
+name: Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    name: Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Vitest
+        run: bun run test

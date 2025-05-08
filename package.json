@@ -19,10 +19,15 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "bun run clean && bun tsc"
+    "build": "bun run clean && bun tsc",
+    "docs": "typedoc src/index.ts --out docs/v1",
+    "test": "bunx vitest"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@vitest/coverage-v8": "3.1.2",
+    "vite": "^6.3.4",
+    "vitest": "^3.1.2"
   },
   "peerDependencies": {
     "typescript": "^5"
