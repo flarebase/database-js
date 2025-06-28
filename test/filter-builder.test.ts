@@ -88,8 +88,10 @@ describe('FilterBuilder - Query Building', () => {
     it('handles "neq" and "gt"', () => {
         const fb = new DummyFilterBuilder();
         fb.filter({
-            age: { gt: 18 },
-            name: { neq: 'Bob' },
+            and: [
+                { age: { gt: 18 } },
+                { name: { neq: 'Bob' } },
+            ]
         });
         expect(fb.getQuery()).toBe("\"age\" > 18 AND \"name\" != 'Bob'");
     });

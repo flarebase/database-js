@@ -75,4 +75,16 @@ export default class DatabaseClient<
             },
         );
     }
+
+    /**
+     * Creates a new WebSocket connection to the database.
+     *
+     * @param path - The path to the websocket endpoint.
+     * @returns A `WebSocket` instance.
+     */
+    websocket(): WebSocket {
+        const url = new URL(`${this.url}/websocket`);
+
+        return new WebSocket(url.toString());
+    }
 }
