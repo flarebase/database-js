@@ -142,16 +142,16 @@ export default class FilterBuilder<
 
         const sqlOp = operatorMap[op];
         const value = this.formatValue(op, val);
-        return `${this.quoteIdentifier(column)} ${sqlOp} ${value}`;
+        return `${column} ${sqlOp} ${value}`;
     }
 
-    private quoteIdentifier(identifier: string): string {
-        // Handles dot notation like profiles.bio → "profiles"."bio"
-        return identifier
-            .split('.')
-            .map(part => `"${part}"`)
-            .join('.');
-    }
+    // private quoteIdentifier(identifier: string): string {
+    //     // Handles dot notation like profiles.bio → "profiles"."bio"
+    //     return identifier
+    //         .split('.')
+    //         .map(part => `${part}`)
+    //         .join('.');
+    // }
 
     /**
      * Formats a value for safe inclusion in a SQL clause.
@@ -177,7 +177,7 @@ export default class FilterBuilder<
      * @returns A SQL-safe string.
      */
     private quote(val: unknown): string {
-        if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+        if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`; // Escape single quotes, e.g., O'Reilly
         if (val === null) return 'NULL';
         return String(val);
     }

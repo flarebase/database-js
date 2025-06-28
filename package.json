@@ -1,6 +1,7 @@
 {
   "name": "@flarebase/database-js",
   "description": "Flarebase JavaScript Client for Flarebase Database",
+  "version": "0.0.1",
   "keywords": [
     "javascript",
     "typescript",
@@ -9,19 +10,21 @@
   "homepage": "https://github.com/flarebase/database-js",
   "bugs": "https://github.com/flarebase/database-js/issues",
   "author": "Flarebase",
-  "repository": "flarebase/database-js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flarebase/database-js.git"
+  },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "bun run clean && bun tsc",
+    "build": "pnpm run clean && tsc",
     "docs": "typedoc src/index.ts --out docs/v1",
-    "test": "bunx vitest"
+    "test": "vitest"
   },
   "devDependencies": {
     "@types/bun": "latest",
