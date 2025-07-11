@@ -1,19 +1,32 @@
 {
+  "compilerOptions": {
+    "target": "ES2018",
+    "lib": ["ES2018", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "outDir": "dist",
+    "sourceMap": true,
+    "stripInternal": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
   "include": [
     "src"
   ],
-  "compilerOptions": {
-    "declaration": true,
-    "declarationMap": true,
-    "module": "CommonJS",
-    "outDir": "dist",
-    "sourceMap": true,
-    "target": "ES2017",
-    "strict": true,
-    "esModuleInterop": true,
-    "moduleResolution": "Node",
-    "forceConsistentCasingInFileNames": true,
-    "stripInternal": true,
-    "emitDeclarationOnly": false
-  }
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "coverage",
+    "docs"
+  ]
 }
