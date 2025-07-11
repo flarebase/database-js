@@ -1,5 +1,5 @@
-import Builder from "./Builder";
-import type { GenericDatabase, GetResult } from "./types";
+import type { GenericDatabase, GetResult } from './types';
+import Builder from './Builder';
 
 /**
  * TransformBuilder enables additional query transformations such as selecting specific columns,
@@ -12,93 +12,94 @@ import type { GenericDatabase, GetResult } from "./types";
  * @template Relationships - The relationships defined in the database schema.
  */
 export default class TransformBuilder<
-    Database extends GenericDatabase,
-    TableName extends keyof Database["Tables"] & string,
-    Row extends Database["Tables"][TableName]["Row"] = Database["Tables"][TableName]["Row"],
-    Result = unknown,
-    Relationships extends Database["Tables"][TableName]["Relationships"] = Database["Tables"][TableName]["Relationships"],
+  Database extends GenericDatabase,
+  TableName extends keyof Database['Tables'] & string,
+  Row extends Database['Tables'][TableName]['Row'] = Database['Tables'][TableName]['Row'],
+  Result = unknown,
+  Relationships extends Database['Tables'][TableName]['Relationships'] = Database['Tables'][TableName]['Relationships'],
 > extends Builder<Result> {
-    select<
-        Columns extends string = "*",
-        NewResultOne = GetResult<Row, Columns>,
-    >(
-        columns?: Columns,
-    ): TransformBuilder<Database, TableName, Row, NewResultOne, Relationships> {
-        this.url = new URL(`${this.url}/query`);
+  select<
+    Columns extends string = '*',
+    NewResultOne = GetResult<Row, Columns>,
+  >(
+    columns?: Columns,
+  ): TransformBuilder<Database, TableName, Row, NewResultOne, Relationships> {
+    this.url = new URL(`${this.url}/query`);
 
-        // Remove whitespace outside quoted identifiers
-        let quoted = false;
-        const cleanedColumns = (columns ?? "*")
-            .split("")
-            .map((c) => {
-                if (/\s/.test(c) && !quoted) {
-                    return "";
-                }
-                if (c === '"') {
-                    quoted = !quoted;
-                }
-                return c;
-            })
-            .join("");
+    // Remove whitespace outside quoted identifiers
+    let quoted = false;
+    const cleanedColumns = (columns ?? '*')
+      .split('')
+      .map((c) => {
+        if (/\s/.test(c) && !quoted) {
+          return '';
+        }
+        if (c === '"') {
+          quoted = !quoted;
+        }
+        return c;
+      })
+      .join('');
 
-        this.url.searchParams.set("columns", cleanedColumns);
+    this.url.searchParams.set('columns', cleanedColumns);
 
-        return this as unknown as TransformBuilder<Database, TableName, Row, NewResultOne, Relationships>;
-    }
+    return this as unknown as TransformBuilder<Database, TableName, Row, NewResultOne, Relationships>;
+  }
 
-    /**
-     * Sort the query results by a specific column.
-     *
-     * @param column - The column to sort by.
-     * @param options - Sorting options:
-     *   - `ascending`: Sort direction (default: `true`)
-     *   - `nullsFirst`: Control placement of `NULL` values
-     *
-     * @returns The current builder instance for chaining.
-     *
-     * @example
-     * ```ts
-     * query.order("created_at", { ascending: false, nullsFirst: true });
-     * ```
-     */
-    order(
-        column: string,
+  /**
+   * Sort the query results by a specific column.
+   *
+   * @param column - The column to sort by.
+   * @param options - Sorting options:
+   * @param options.ascending - Sort direction (default: `true`)
+   * @param options.nullsFirst - Control placement of `NULL` values
+   *
+   * @returns The current builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * query.order("created_at", { ascending: false, nullsFirst: true });
+   * ```
+   */
+  order(
+    column: string,
         {
             ascending = true,
             nullsFirst,
         }: {
-            ascending?: boolean;
-            nullsFirst?: boolean;
+          ascending?: boolean;
+          nullsFirst?: boolean;
         } = {},
-    ): this {
-        const direction = ascending ? 'asc' : 'desc';
-        const nulls = nullsFirst === undefined
-            ? '' : nullsFirst
-                ? ':nullsfirst'
-                : ':nullslast';
+  ): this {
+    const direction = ascending ? 'asc' : 'desc';
+    const nulls = nullsFirst === undefined
+      ? ''
+      : nullsFirst
+        ? ':nullsfirst'
+        : ':nullslast';
 
-        this.url.searchParams.append('sort', `${column}:${direction}${nulls}`);
-        return this;
-    }
+    this.url.searchParams.append('sort', `${column}:${direction}${nulls}`);
+    return this;
+  }
 
-    /**
-     * Add pagination to the query.
-     *
-     * @param page - Page number (starts from 1).
-     * @param pageSize - Number of rows per page (default: 100).
-     * @returns The current builder instance for chaining.
-     *
-     * @example
-     * ```ts
-     * query.page(2, 50); // Page 2 with 50 items per page
-     * ```
-     */
-    page(
-        page: number,
+  /**
+   * Add pagination to the query.
+   *
+   * @param page - Page number (starts from 1).
+   * @param pageSize - Number of rows per page (default: 100).
+   * @returns The current builder instance for chaining.
+   *
+   * @example
+   * ```ts
+   * query.page(2, 50); // Page 2 with 50 items per page
+   * ```
+   */
+  page(
+    page: number,
         pageSize: number = 100,
-    ): this {
-        this.url.searchParams.set("page", `${page}`);
-        this.url.searchParams.set("pageSize", `${pageSize}`);
-        return this;
-    }
+  ): this {
+    this.url.searchParams.set('page', `${page}`);
+    this.url.searchParams.set('pageSize', `${pageSize}`);
+    return this;
+  }
 }

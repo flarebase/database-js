@@ -10,6 +10,8 @@ jobs:
   docs:
     name: Publish docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -28,4 +30,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs
           force_orphan: true
-          commit_message: "docs: update"
+          commit_message: 'docs: update'

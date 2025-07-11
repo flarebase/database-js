@@ -1,30 +1,30 @@
-import DatabaseClient from './DatabaseClient';
-import QueryBuilder from './QueryBuilder';
-import FilterBuilder from './FilterBuilder';
-import TransformBuilder from './TransformBuilder';
 import Builder from './Builder';
+import DatabaseClient from './DatabaseClient';
 import DatabaseError from './Error';
+import FilterBuilder from './FilterBuilder';
+import QueryBuilder from './QueryBuilder';
+import TransformBuilder from './TransformBuilder';
 
 export {
-    DatabaseClient,
-    QueryBuilder,
-    FilterBuilder,
-    TransformBuilder,
-    Builder,
-    DatabaseError,
-}
+  Builder,
+  DatabaseClient,
+  DatabaseError,
+  FilterBuilder,
+  QueryBuilder,
+  TransformBuilder,
+};
 
 export default {
-    DatabaseClient,
-    QueryBuilder,
-    FilterBuilder,
-    TransformBuilder,
-    Builder,
-    DatabaseError,
-}
+  DatabaseClient,
+  QueryBuilder,
+  FilterBuilder,
+  TransformBuilder,
+  Builder,
+  DatabaseError,
+};
 
 export type {
-    ResponseSuccess,
-    ResponseError,
-    SingleResponse,
+  ResponseError,
+  ResponseSuccess,
+  SingleResponse,
 } from './types';
